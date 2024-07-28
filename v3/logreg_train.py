@@ -9,31 +9,6 @@ LEARNING_RATE = 0.01
 EPOCHS = 1000
 
 
-"""            HELPER FUNCTIONS               """
-
-
-def mean_(values: pd.Series) -> float:
-    assert len(values) != 0, "<values> should not be empty"
-    m = len(values)
-    return values.sum() / m
-
-
-def var_(values: pd.Series) -> float:
-    assert len(values) != 0, "<values> should not be empty"
-    m = len(values)
-    v_mean = mean_(values)
-    squared_mean_dist = []
-    for x in values:
-        squared_mean_dist.append((x - v_mean)**2)
-    df_squared_mean_dist = pd.Series(squared_mean_dist)
-    return df_squared_mean_dist.sum() / m
-
-
-def std_(values: pd.Series) -> float:
-    assert len(values) != 0, "<values> should not be empty"
-    return var_(values)**0.5
-
-
 """           DATA PREPERATION           """
 
 
