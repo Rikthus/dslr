@@ -1,15 +1,20 @@
 import sys
 import os
+import json
 import pandas as pd
 import numpy as np
 from sklearn.preprocessing import StandardScaler
 
 
+WEIGHTS_FILE = "weights.json"
 LEARNING_RATE = 0.1
 EPOCHS = 1000
 
-
-"""           DATA PREPERATION           """
+CLASSES_TO_REMOVE = [
+    "Care of Magical Creatures",
+    "Arithmancy",
+    "Astronomy"
+]
 
 
 def load_dataset() -> pd.DataFrame:
@@ -20,6 +25,11 @@ def load_dataset() -> pd.DataFrame:
 
     df = pd.read_csv(path)
     return df
+
+
+def save_weights_in_file(weights: dict[str, list]):
+    with open(WEIGHTS_FILE, 'w') as f:
+        json.dump(weights, f)
 
 
 def identify_non_numeric_columns(df: pd.DataFrame) -> list[str]:
@@ -42,13 +52,15 @@ def format_dataset(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
     one without non numeric features and one containing a column for each House.
     Inside these columns there is a 1 if the student is from this House, else a 0.
 
+    The numeric features values are standardized.
+
     Parameters:
         df : pandas.DataFrame
             Dataset to format
 
     Returns:
         tuple[pandas.DataFrame, pandas.DataFrame]:
-            Dataset of formated numeric features only and Dataset of Students memberships
+            Dataset of standardized numeric features only and Dataset of Students memberships
     """
     df.dropna(inplace=True)
     df.drop_duplicates(inplace=True)
@@ -63,7 +75,9 @@ def format_dataset(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
     return (x_df, y_df)
 
 
-"""             LOGISTIC REGRESSION              """
+def remove_useless_features(df: pd.DataFrame) -> pd.DataFrame:
+    df.drop(columns=CLASSES_TO_REMOVE, inplace=True)
+    return df
 
 
 def gradient_descent(X: np.ndarray, h: np.ndarray, Y: np.ndarray, thetas: np.ndarray) -> np.ndarray:
@@ -86,13 +100,7 @@ def logistic_regression(X: np.ndarray, Y: np.ndarray) -> np.ndarray:
 
     for _ in range(EPOCHS):
         h = sigmoid_function(X, thetas)
-
-        old_thetas = thetas
         thetas = gradient_descent(X, h, Y, thetas)
-
-        print(old_thetas)
-        print("\n")
-        print(thetas)
 
     return thetas
 
@@ -101,27 +109,26 @@ def one_vs_all(x_df: pd.DataFrame, y_df: pd.DataFrame):
     x = x_df.to_numpy()
     X = np.hstack((x, np.ones((x.shape[0], 1))))
 
+    weights = {}
     for col in y_df:
         y = y_df[col].to_numpy()
-        Y = y.reshape(y.shape[0], 1)
+        Y = y.reshape(y.shape[0], 1).astype(float)
 
         thetas = logistic_regression(X, Y)
-
-        print(f"WEIGHTS: {col}")
-        print(thetas)
-        print("END")
-
-        # save thetas in a file
+        weights[col] = thetas.tolist()
+    return weights
 
 
 def main():
-    # try:
-    pd.set_option('future.no_silent_downcasting', True)
-    df = load_dataset()
-    x_df, y_df = format_dataset(df)
-    one_vs_all(x_df, y_df)
-    # except Exception as e:
-    #     print(f"{e.__class__.__name__}: {e.args[0]}")
+    try:
+        pd.set_option('future.no_silent_downcasting', True)
+        df = load_dataset()
+        filtered_df = remove_useless_features(df)
+        x_df, y_df = format_dataset(filtered_df)
+        weights = one_vs_all(x_df, y_df)
+        save_weights_in_file(weights)
+    except Exception as e:
+        print(f"{e.__class__.__name__}: {e.args[0]}")
 
 
 if __name__ == "__main__":
