@@ -5,7 +5,7 @@ import numpy as np
 from sklearn.preprocessing import StandardScaler
 
 
-LEARNING_RATE = 0.01
+LEARNING_RATE = 0.1
 EPOCHS = 1000
 
 
@@ -38,6 +38,18 @@ def standardize_data(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def format_dataset(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Remove Nan and duplicates in the original dataset. Then separate it in 2 datasets,
+    one without non numeric features and one containing a column for each House.
+    Inside these columns there is a 1 if the student is from this House, else a 0.
+
+    Parameters:
+        df : pandas.DataFrame
+            Dataset to format
+
+    Returns:
+        tuple[pandas.DataFrame, pandas.DataFrame]:
+            Dataset of formated numeric features only and Dataset of Students memberships
+    """
     df.dropna(inplace=True)
     df.drop_duplicates(inplace=True)
     df.drop(inplace=True, columns="Index")
